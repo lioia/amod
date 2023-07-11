@@ -42,3 +42,10 @@ export PATH="${PATH}:${GUROBI_HOME}/bin"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${GUROBI_HOME}/lib"
 ```
 
+## Neovim (`clangd`) Configuration
+
+```bash
+cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+cp build/compile_commands.json .
+```
+

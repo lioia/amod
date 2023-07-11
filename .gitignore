@@ -1,2 +1,3 @@
 build
-gurobi.log
+*.log
+compile_commands.json
