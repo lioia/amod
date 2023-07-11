@@ -1,3 +1,4 @@
+#include "generate/generate.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,8 +40,10 @@ int generate_command(int argc, char **argv) {
     filename = argv[2];
   }
   printf("Generating instances in %s\n", filename);
-  // TODO: implement
-  return 0;
+  int result = generate(filename);
+  if (result)
+    fprintf(stderr, "Error while generating instances\n");
+  return result;
 }
 
 int run_command(int argc, char **argv) {
@@ -64,9 +67,9 @@ void print_help_screen() {
   printf("AMOD Project\n\n");
   printf("Usage: amod [COMMAND]\n\n");
   printf("Commands:\n");
-  printf("\thelp\tShow help screen\n");
-  printf("\tgenerate [filename]\tGenerate instances in filename (default: "
+  printf("\thelp\t\t\t\tShow help screen\n");
+  printf("\tgenerate [filename]\t\tGenerate instances in filename (default: "
          "instances.csv)\n");
-  printf("\trun [workers] [filename]\t\tRun simulation (default: workers: 8, "
+  printf("\trun [workers] [filename]\tRun simulation (default: workers: 8, "
          "filename: instances.csv)\n");
 }
