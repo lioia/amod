@@ -30,7 +30,7 @@ include_directories(${GUROBI_INCLUDE_DIRS})
 add_executable(
   amod
   # other files go here
-  src/main.c)
+  src/gurobi/gurobi.c src/main.c)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} ${GUROBI_LIBRARY})
 
