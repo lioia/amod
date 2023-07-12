@@ -1,6 +1,6 @@
 #pragma once
 
-#define NUMBER_OF_INSTANCES 4
+#define NUMBER_OF_INSTANCES 5
 // Stream 0
 #define NUMBER_OF_JOBS_UL                                                      \
   (int[]) { 10, 25, 50 }

@@ -8,6 +8,8 @@ int generate(const char *filename) {
     return -1;
   fprintf(fp, "Instance,ProcessingTime,ReleaseDate\n");
 
+  plant_seeds(-1);
+
   int instance_count = 1;
 
   for (size_t i = 0; i < 3; i++) {
@@ -33,6 +35,7 @@ int generate(const char *filename) {
     }
   }
   fclose(fp);
+  printf("Generated %d instances\n", instance_count);
   return 0;
 }
 
@@ -94,8 +97,6 @@ void put_seed(long x) {
 
   if (x > 0)
     x = x % MODULUS; /* correct if x is too large  */
-  if (x < 0)
-    x = ((unsigned long)time((time_t *)NULL)) % MODULUS;
   if (x == 0)
     while (!ok) {
       printf("\nEnter a positive integer seed (9 digits or less) >> ");

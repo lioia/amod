@@ -1,5 +1,10 @@
+# Build files
 build
+# Gurobi log files
 *.log
-compile_commands.json
+# Exported Gurobi models
 *.mps
 *.lp
+# clangd files
+.cache
+compile_commands.json
