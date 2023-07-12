@@ -38,6 +38,23 @@ int vector_add(vector_t *vector, void *value) {
   return 0;
 }
 
+int vector_refit(vector_t *vector) {
+  // Already refit
+  if (vector->length == vector->allocated_size)
+    return 0;
+
+  vector->values =
+      realloc(vector->values, sizeof(*vector->values) * vector->length);
+
+  if (vector->values == NULL) {
+    fprintf(stderr, "Could not refit vector\n");
+    return -1;
+  }
+  vector->allocated_size = vector->length;
+
+  return 0;
+}
+
 int vector_free(vector_t *vector) {
   for (size_t i = 0; i < vector->length; i++) {
     free(vector->values[i]);

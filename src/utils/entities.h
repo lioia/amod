@@ -3,12 +3,7 @@
 #include "gurobi_c.h"
 #include "vector.h"
 
-typedef enum {
-  Precedence,
-  Positional,
-  TimeIndexed,
-  Heuristics
-} resolution_method_t;
+typedef enum { Precedence, Positional, TimeIndexed, Heuristics } solver_t;
 
 typedef struct {
   int number_of_jobs;

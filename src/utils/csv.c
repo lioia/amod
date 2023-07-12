@@ -43,11 +43,14 @@ int load_csv(const char *filename, vector_t *vector) {
     number_of_jobs += 1;
     // New instance, can create the old one
     if (old_instance_number != instance_number) {
-      instance_t *instance;
-      if ((result = instance_init(instance, number_of_jobs, processing_times,
-                                  release_dates)) != 0)
-        return result;
-
+      instance_t *instance = malloc(sizeof(*instance));
+      if (instance == NULL) {
+        fprintf(stderr, "Could not allocate instance\n");
+        return -1;
+      }
+      instance->number_of_jobs = number_of_jobs;
+      instance->processing_times = processing_times;
+      instance->release_dates = release_dates;
       if ((result = vector_add(vector, instance)) != 0)
         return result;
       number_of_jobs = 0;
@@ -59,26 +62,18 @@ int load_csv(const char *filename, vector_t *vector) {
   }
 
   // Adding last loaded instance
-  instance_t *instance;
-  if ((result = instance_init(instance, number_of_jobs, processing_times,
-                              release_dates)) != 0)
-    return result;
-
-  if ((result = vector_add(vector, instance)) != 0)
-    return result;
-
-  fclose(fp);
-  return result;
-}
-
-int instance_init(instance_t *instance, int number_of_jobs,
-                  int *processing_times, int *release_dates) {
-  if ((instance = malloc(sizeof(*instance))) == NULL) {
+  instance_t *instance = malloc(sizeof(*instance));
+  if (instance == NULL) {
     fprintf(stderr, "Could not allocate instance\n");
     return -1;
   }
   instance->number_of_jobs = number_of_jobs;
   instance->processing_times = processing_times;
   instance->release_dates = release_dates;
-  return 0;
+
+  if ((result = vector_add(vector, instance)) != 0)
+    return result;
+
+  fclose(fp);
+  return result;
 }
