@@ -14,6 +14,13 @@ cmake -B build
 cmake --build build
 ```
 
+## Clean
+
+```bash
+cmake -B build
+cmake --build build --target clean
+```
+
 ## Gurobi Installation
 
 ### Download

@@ -1,9 +1,10 @@
 #include "generate/generate.h"
+#include "run/run.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-void print_help_screen();
+int print_help_screen();
 int generate_command(int argc, char **argv);
 int run_command(int argc, char **argv);
 
@@ -19,19 +20,13 @@ int run_command(int argc, char **argv);
  *    instances.csv: instance_number,release_date,processing_time
  * */
 int main(int argc, char **argv) {
-  if (argc == 1) {
-    print_help_screen();
-    return 0;
+  if (argc > 1) {
+    if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-H"))
+      return print_help_screen();
+    else if (!strcmp(argv[1], "generate"))
+      return generate_command(argc, argv);
   }
-
-  if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-H")) {
-    print_help_screen();
-    return 0;
-  } else if (!strcmp(argv[1], "generate")) {
-    return generate_command(argc, argv);
-  } else if (!strcmp(argv[1], "run")) {
-    return run_command(argc, argv);
-  }
+  return run_command(argc, argv);
 }
 
 int generate_command(int argc, char **argv) {
@@ -59,11 +54,10 @@ int run_command(int argc, char **argv) {
   }
   printf("Running simulation with %d threads on instances from %s\n", workers,
          filename);
-  // TODO: implement
-  return 0;
+  return run(workers, filename);
 }
 
-void print_help_screen() {
+int print_help_screen() {
   printf("AMOD Project\n\n");
   printf("Usage: amod [COMMAND]\n\n");
   printf("Commands:\n");
@@ -72,4 +66,5 @@ void print_help_screen() {
          "instances.csv)\n");
   printf("\trun [workers] [filename]\tRun simulation (default: workers: 8, "
          "filename: instances.csv)\n");
+  return 0;
 }

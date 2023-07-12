@@ -30,7 +30,8 @@ include_directories(${GUROBI_INCLUDE_DIRS})
 add_executable(
   amod
   # other files go here
-  src/generate/generate.c src/main.c)
+  src/generate/generate.c src/utils/vector.c src/run/run.c src/utils/csv.c
+  src/main.c)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} ${GUROBI_LIBRARY})
 
@@ -38,3 +39,8 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   include(FeatureSummary)
   feature_summary(WHAT ALL)
 endif()
+
+set_property(
+  TARGET amod
+  APPEND
+  PROPERTY ADDITIONAL_CLEAN_FILES *.log .cache)
