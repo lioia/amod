@@ -10,7 +10,7 @@ int generate(const char *filename) {
 
   plant_seeds(-1);
 
-  int instance_count = 1;
+  int instance_count = 0;
 
   for (size_t i = 0; i < 3; i++) {
     int number_of_jobs_ul = NUMBER_OF_JOBS_UL[i];
