@@ -7,8 +7,8 @@ project(
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(amod_tests runner.c)
+add_executable(${PROJECT_NAME} runner.c)
 
-target_link_libraries(amod_tests amod_library)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LIBRARY_NAME})
 
-add_test(NAME amod_tests COMMAND amod_tests)
+add_test(NAME ${PROJECT_NAME} COMMAND ${CMAKE_PROJECT_NAME})
