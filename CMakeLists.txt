@@ -30,13 +30,13 @@ include_directories(${GUROBI_INCLUDE_DIRS})
 
 add_library(
   ${PROJECT_LIBRARY_NAME} STATIC
-  src/generate/generate.c src/utils/vector.c src/run/run.c src/utils/csv.c
+  src/generate/generate.c src/utils/entities.c src/run/run.c src/utils/csv.c
   src/run/model/model.c)
 
 add_executable(${CMAKE_PROJECT_NAME} src/main.c)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} ${PROJECT_LIBRARY_NAME})
-target_link_libraries(${CMAKE_PROJECT_NAME} ${GUROBI_LIBRARY})
+target_link_libraries(${PROJECT_LIBRARY_NAME} ${GUROBI_LIBRARY})
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   include(FeatureSummary)

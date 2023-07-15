@@ -4,11 +4,8 @@
 
 int run(int workers, const char *filename);
 
-int init_simulation(simulation_t *simulation);
-int free_simulation(simulation_t *simulation);
+simulation_t *environment_init(vector_t *instances);
+int simulation_free(simulation_t *simulation);
+int handle_instances(solver_t solver, simulation_t *sim);
 
-int create_model(simulation_t *simulation, const char *name);
-int free_model(simulation_t *simulation);
-
-void report_gurobi_error(simulation_t *simulation, const char *error,
-                         int result);
+void report_error(simulation_t *simulation, const char *error, int result);

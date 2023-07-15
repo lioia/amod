@@ -5,6 +5,7 @@ build
 # Exported Gurobi models
 *.mps
 *.lp
+*.json
 # clangd files
 .cache
 compile_commands.json
