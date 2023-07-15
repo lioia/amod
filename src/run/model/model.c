@@ -30,10 +30,9 @@ int model_init(simulation_t *sim, int instance_number, solver_t solver) {
 
   switch (solver) {
   case Precedence:
-    break;
+    return model_precedence_create(sim, instance);
   case Positional:
     return model_positional_create(sim, instance);
-    break;
   case TimeIndexed:
     break;
     // TODO: Heuristics case
@@ -88,6 +87,166 @@ solution_t *model_optimize(simulation_t *sim, int instance_number,
   }
 
   return solution;
+}
+
+int model_precedence_create(simulation_t *sim, instance_t *instance) {
+  int result = 0;
+  int n = instance->number_of_jobs;
+  int size = n                  // C_j
+             + n * (n - 1) / 2; // x_(i j) i < j
+
+  double *vars = malloc(sizeof(*vars) * size);
+  if (vars == NULL) {
+    fprintf(stderr, "Could not allocate memory for vars\n");
+    return -1;
+  }
+  memset(vars, 0, sizeof(*vars) * size);
+  // Setting objective function: sum_(h = 1)^n C_j
+  for (size_t i = 0; i < n; i++) {
+    vars[i] = 1;
+  }
+
+  char *var_types = malloc(sizeof(*var_types) * size);
+  if (var_types == NULL) {
+    fprintf(stderr, "Could not allocate memory for var_types\n");
+    return -1;
+  }
+  memset(var_types, GRB_BINARY, sizeof(*var_types) * size);
+  for (size_t i = 0; i < n; i++) {
+    var_types[i] = GRB_INTEGER;
+  }
+
+  char **names = malloc(sizeof(*names) * size);
+  if (names == NULL) {
+    fprintf(stderr, "Could not allocate memory for names\n");
+    return -1;
+  }
+  for (size_t j = 0; j < n; j++) {
+    size_t len = snprintf(NULL, 0, "C_%ld", j) + 1;
+    names[j] = malloc(sizeof(*names[j]) * len);
+    if (names[j] == NULL) {
+      names[j] = "C_j";
+    }
+    sprintf(names[j], "C_%ld", j + 1);
+    names[j][len - 1] = '\0';
+  }
+
+  for (size_t i = 0; i < n - 1; i++) {
+    for (size_t j = i + 1; j < n; j++) {
+      size_t len = snprintf(NULL, 0, "x_(%ld,%ld)", i, j) + 1;
+      names[i + j + 2] = malloc(sizeof(*names[i + j + 2]) * len);
+      if (names[i + j + 2] == NULL) {
+        names[i + j + 2] = "x_(i,j)";
+      } else {
+        sprintf(names[i + j + 2], "x_(%ld,%ld)", i + 1, j + 1);
+        names[i + j + 2][len - 1] = '\0';
+      }
+    }
+  }
+
+  if ((result = GRBaddvars(instance->model, size, 0, NULL, NULL, NULL, vars,
+                           NULL, NULL, var_types, names)) != 0) {
+    report_error(sim, "Could not add variables", result);
+    return result;
+  }
+
+  int big_m = 0;
+  int max_r_j = 0;
+  for (size_t j = 0; j < n; j++) {
+    big_m += instance->processing_times[j];
+    if (instance->release_dates[j] > max_r_j)
+      max_r_j = instance->release_dates[j];
+  }
+  big_m += max_r_j;
+
+  size_t c_size = 1;
+  int *c_index = malloc(sizeof(*c_index) * c_size);
+  if (c_index == NULL) {
+    fprintf(stderr, "Could not allocate memory for constr_index\n");
+    return -1;
+  }
+  memset(c_index, 0, sizeof(*c_index) * c_size);
+  double *c_vals = malloc(sizeof(*c_vals) * c_size);
+  if (c_vals == NULL) {
+    fprintf(stderr, "Could not allocate memory for constr_vals\n");
+    return -1;
+  }
+  memset(c_vals, 0, sizeof(c_vals) * c_size);
+
+  // C_j >= p_j + r_j forall j in J
+
+  // forall j in J
+  for (size_t j = 0; j < n; j++) {
+    c_index[0] = j;
+    c_vals[0] = 1;
+
+    double rhs = instance->processing_times[j] + instance->release_dates[j];
+
+    if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
+                               GRB_GREATER_EQUAL, rhs, NULL)) != 0) {
+      char *error = constraint_error_message("j", j);
+      report_error(sim, error, result);
+      return result;
+    }
+  }
+
+  c_size = 3;
+  if ((result = realloc_constr(&c_index, &c_vals, c_size)) != 0)
+    return result;
+
+  // C_i <= C_j - p_j + M(1 - x_(i j)) 1 <= i < j <= n
+  for (size_t i = 0; i < n; i++) {
+    for (size_t j = i + 1; j < n; j++) {
+      c_index[0] = i;
+      c_vals[0] = 1;
+      c_index[1] = j;
+      c_vals[1] = -1;
+      c_index[2] = i + j + 2;
+      c_vals[2] = big_m;
+      double rhs = big_m - instance->processing_times[j];
+
+      if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
+                                 GRB_LESS_EQUAL, rhs, NULL)) != 0) {
+        char *error = constraint_error_message("i, j", j);
+        report_error(sim, error, result);
+        return result;
+      }
+    }
+  }
+
+  c_size = 3;
+  if ((result = realloc_constr(&c_index, &c_vals, c_size)) != 0)
+    return result;
+
+  // C_j <= C_i - p_i + M x_(i j) 1 <= i < j <= n
+  for (size_t i = 0; i < n; i++) {
+    for (size_t j = i + 1; j < n; j++) {
+      c_index[0] = j;
+      c_vals[0] = 1;
+      c_index[1] = i;
+      c_vals[1] = -1;
+      c_index[2] = i + j + 2;
+      c_vals[2] = -big_m;
+      double rhs = -instance->processing_times[i];
+
+      if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
+                                 GRB_LESS_EQUAL, rhs, NULL)) != 0) {
+        char *error = constraint_error_message("i, j", j);
+        report_error(sim, error, result);
+        return result;
+      }
+    }
+  }
+
+  free(vars);
+  vars = NULL;
+  free(var_types);
+  var_types = NULL;
+  free(c_index);
+  c_index = NULL;
+  free(c_vals);
+  c_vals = NULL;
+  return result;
 }
 
 int model_positional_create(simulation_t *sim, instance_t *instance) {
@@ -152,36 +311,37 @@ int model_positional_create(simulation_t *sim, instance_t *instance) {
     return result;
   }
 
-  // sum_(h=1)^n x_(j h) = 1 forall j in J
-
-  // forall j in J
-  int *c_index = malloc(sizeof(*c_index) * n);
+  size_t c_size = n;
+  int *c_index = malloc(sizeof(*c_index) * c_size);
   if (c_index == NULL) {
     fprintf(stderr, "Could not allocate memory for constr_index\n");
     return -1;
   }
-  memset(c_index, 0, sizeof(*c_index) * n);
-  double *c_vals = malloc(sizeof(*c_vals) * n);
+  memset(c_index, 0, sizeof(*c_index) * c_size);
+  double *c_vals = malloc(sizeof(*c_vals) * c_size);
   if (c_vals == NULL) {
     fprintf(stderr, "Could not allocate memory for constr_vals\n");
     return -1;
   }
-  memset(c_vals, 0, sizeof(c_vals) * n);
+  memset(c_vals, 0, sizeof(c_vals) * c_size);
 
+  // sum_(h=1)^n x_(j h) = 1 forall j in J
+
+  // forall j in J
   for (size_t j = 0; j < n; j++) {
     for (size_t h = 0; h < n; h++) {
       c_index[h] = n + j * n + h;
       c_vals[h] = 1;
     }
-    if ((result = GRBaddconstr(instance->model, n, c_index, c_vals, GRB_EQUAL,
-                               1, NULL)) != 0) {
+    if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
+                               GRB_EQUAL, 1, NULL)) != 0) {
       char *error = constraint_error_message("j", j);
       report_error(sim, error, result);
       return result;
     }
   }
 
-  int c_size = n;
+  c_size = n;
   if ((result = realloc_constr(&c_index, &c_vals, c_size)) != 0)
     return result;
 
@@ -193,7 +353,6 @@ int model_positional_create(simulation_t *sim, instance_t *instance) {
       c_index[j] = n + j * n + h;
       c_vals[j] = 1;
     }
-    print_constraint(h, c_size, c_index, c_vals);
     if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
                                GRB_EQUAL, 1, NULL)) != 0) {
       char *error = constraint_error_message("h", h);
