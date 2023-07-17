@@ -50,7 +50,7 @@ int load_csv(const char *filename, vector_t *vector) {
       instance->number_of_jobs = number_of_jobs;
       instance->processing_times = processing_times;
       instance->release_dates = release_dates;
-      if ((result = vector_add(vector, instance)) != 0)
+      if ((result = vector_add(vector, (void **)&instance)) != 0)
         return result;
       number_of_jobs = 0;
       processing_times =
@@ -70,7 +70,7 @@ int load_csv(const char *filename, vector_t *vector) {
   instance->processing_times = processing_times;
   instance->release_dates = release_dates;
 
-  if ((result = vector_add(vector, instance)) != 0)
+  if ((result = vector_add(vector, (void **)&instance)) != 0)
     return result;
 
   fclose(fp);
