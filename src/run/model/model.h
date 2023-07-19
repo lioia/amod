@@ -2,6 +2,8 @@
 
 #include "../../utils/entities.h"
 
+#define TIME_LIMIT 60.0 / 4
+
 typedef struct {
   int index;
   double val;

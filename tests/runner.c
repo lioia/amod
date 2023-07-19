@@ -9,7 +9,6 @@
 solution_t *model_precedence_test(simulation_t *simulation);
 solution_t *model_positional_test(simulation_t *simulation);
 solution_t *model_timeindexed_test(simulation_t *simulation);
-int save_solution(solution_t *solution);
 
 int main(void) {
   int result = 0;
@@ -32,72 +31,42 @@ int main(void) {
   simulation_t *sim = environment_init(instances);
 
   // Execute tests
-  printf("---------------------------\n");
-  printf("Model Precedence Test\n");
-  solution_t *solution = model_precedence_test(sim);
+  // printf("---------------------------");
+  // printf("Model Precedence Test");
+  // solution = model_precedence_test(sim);
+  // if (solution == NULL)
+  //   perror("Model Precedence Test failed");
+  // printf("---------------------------");
+  // printf("Model Positional Test\n");
+  // solution_t *solution = model_positional_test(sim);
+  // if (solution == NULL)
+  //   perror("Model Positional Test failed");
+  printf("---------------------------");
+  printf("Model Time Indexed Test\n");
+  solution_t *solution = model_timeindexed_test(sim);
   if (solution == NULL)
-    fprintf(stderr, "Model Precedence Test failed\n");
-  else
-    save_solution(solution);
-  printf("---------------------------\n");
-  printf("\nModel Positional Test\n");
-  solution = model_positional_test(sim);
-  if (solution == NULL)
-    fprintf(stderr, "Model Positional Test failed\n");
-  else
-    save_solution(solution);
-  printf("---------------------------\n");
-  printf("\nModel Time Indexed Test\n");
-  solution = model_timeindexed_test(sim);
-  if (solution == NULL)
-    fprintf(stderr, "Model Time Indexed Test failed\n");
-  else
-    save_solution(solution);
-  printf("---------------------------\n");
+    perror("Model Time Indexed Test failed");
+  printf("---------------------------");
 
   // Teardown
+  free(solution->values);
+  solution->values = NULL;
+  free(solution);
+  solution = NULL;
   if ((result = simulation_free(sim)) != 0)
     return result;
   return result;
 }
 
-int save_solution(solution_t *solution) {
-  int result = 0;
-  printf("Found solution:\n");
-  printf("\tStatus: %d\n", solution->status);
-  printf("\tObjective Value: %f\n", solution->objective_value);
-  printf("\tObjective Solution: (");
-  for (size_t i = 0; i < solution->size; i++) {
-    printf("%f", solution->values[i]);
-    if (i != solution->size - 1)
-      printf(", ");
-  }
-  printf(")\n");
-  size_t len = snprintf(NULL, 0, "%d.json", solution->solver) + 1;
-  char *name = malloc(sizeof(*name) * len);
-  if (name == NULL) {
-    name = "unknown.json";
-  } else {
-    sprintf(name, "%d.json", solution->solver);
-    name[len - 1] = '\0';
-  }
-  if ((result = GRBwrite(solution->model, name)) != 0) {
-    fprintf(stderr, "Could not write %s\n", name);
-    return result;
-  }
-
-  return 0;
-}
-
 solution_t *model_precedence_test(simulation_t *simulation) {
   instance_t *instance = simulation->instances->values[0];
   if (model_init(simulation, 0, Precedence) != 0) {
-    fprintf(stderr, "Could not init model\n");
+    perror("Could not init model");
     return NULL;
   }
 
   if (GRBwrite(instance->model, "precedence.lp") != 0) {
-    fprintf(stderr, "Could not write precedence.lp\n");
+    perror("Could not write precedence.lp");
     return NULL;
   }
   return model_optimize(simulation, 0, Precedence);
@@ -106,12 +75,12 @@ solution_t *model_precedence_test(simulation_t *simulation) {
 solution_t *model_positional_test(simulation_t *simulation) {
   instance_t *instance = simulation->instances->values[0];
   if (model_init(simulation, 0, Positional) != 0) {
-    fprintf(stderr, "Could not init model\n");
+    perror("Could not init model");
     return NULL;
   }
 
   if (GRBwrite(instance->model, "positional.lp") != 0) {
-    fprintf(stderr, "Could not write positional.lp\n");
+    perror("Could not write positional.lp");
     return NULL;
   }
   return model_optimize(simulation, 0, Positional);
@@ -120,12 +89,12 @@ solution_t *model_positional_test(simulation_t *simulation) {
 solution_t *model_timeindexed_test(simulation_t *simulation) {
   instance_t *instance = simulation->instances->values[0];
   if (model_init(simulation, 0, TimeIndexed) != 0) {
-    fprintf(stderr, "Could not init model\n");
+    perror("Could not init model");
     return NULL;
   }
 
   if (GRBwrite(instance->model, "timeindexed.lp") != 0) {
-    fprintf(stderr, "Could not write timeindexed.lp\n");
+    perror("Could not write timeindexed.lp");
     return NULL;
   }
 

@@ -31,7 +31,7 @@ include_directories(${GUROBI_INCLUDE_DIRS})
 add_library(
   ${PROJECT_LIBRARY_NAME} STATIC
   src/generate/generate.c src/utils/entities.c src/run/run.c src/utils/csv.c
-  src/run/model/model.c)
+  src/run/model/model.c src/utils/strings.c)
 
 add_executable(${CMAKE_PROJECT_NAME} src/main.c)
 

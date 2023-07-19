@@ -1,16 +1,17 @@
 #include "csv.h"
 #include "../generate/generate.h"
 #include "entities.h"
+#include "strings.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-// vector is already initialized
 int load_csv(const char *filename, vector_t *vector) {
   FILE *fp = fopen(filename, "r");
   int result = 0;
   if (fp == NULL) {
-    fprintf(stderr, "Could not open %s\n", filename);
-    return result;
+    perror(formatted_string("Could not open %s", filename));
+    return -1;
   }
 
   // Skipping first line
@@ -18,44 +19,50 @@ int load_csv(const char *filename, vector_t *vector) {
 
   int old_instance_number = 1;
   int number_of_jobs = 0;
-  int *processing_times =
-      malloc(sizeof(*processing_times) * NUMBER_OF_JOBS_UL[2]);
-  if (processing_times == NULL) {
-    fprintf(stderr, "Could not allocate processing times\n");
+  int *p_js = malloc(sizeof(*p_js) * NUMBER_OF_JOBS_UL[ARRAY_SIZE]);
+  if (p_js == NULL) {
+    perror("Could not allocate processing times");
     return -1;
   }
 
-  int *release_dates = malloc(sizeof(*release_dates) * NUMBER_OF_JOBS_UL[2]);
-  if (release_dates == NULL) {
-    fprintf(stderr, "Could not allocate release dates\n");
+  int *r_js = malloc(sizeof(*r_js) * NUMBER_OF_JOBS_UL[2]);
+  if (r_js == NULL) {
+    perror("Could not allocate release dates");
     return -1;
   }
 
+  int instance_number = 0;
   while (!feof(fp)) {
-    int instance_number = 0;
-    int processing_time = 0;
-    int release_date = 0;
-
-    fscanf(fp, "%d,%d,%d\n", &instance_number, &processing_time, &release_date);
-    processing_times[number_of_jobs] = processing_time;
-    release_dates[number_of_jobs] = release_date;
+    int p_j = 0;
+    int r_j = 0;
+    fscanf(fp, "%d,%d,%d", &instance_number, &p_j, &r_j);
+    p_js[number_of_jobs] = p_j;
+    r_js[number_of_jobs] = r_j;
     number_of_jobs += 1;
     // New instance, can create the old one
     if (old_instance_number != instance_number) {
       instance_t *instance = malloc(sizeof(*instance));
       if (instance == NULL) {
-        fprintf(stderr, "Could not allocate instance\n");
+        perror("Could not allocate instance");
         return -1;
       }
       instance->number_of_jobs = number_of_jobs;
-      instance->processing_times = processing_times;
-      instance->release_dates = release_dates;
+      instance->processing_times = p_js;
+      instance->release_dates = r_js;
       if ((result = vector_add(vector, (void **)&instance)) != 0)
         return result;
+
       number_of_jobs = 0;
-      processing_times =
-          malloc(sizeof(*processing_times) * NUMBER_OF_JOBS_UL[2]);
-      release_dates = malloc(sizeof(*release_dates) * NUMBER_OF_JOBS_UL[2]);
+      p_js = malloc(sizeof(*p_js) * NUMBER_OF_JOBS_UL[ARRAY_SIZE]);
+      if (p_js == NULL) {
+        perror("Could not allocate memory for processing times");
+        return -1;
+      }
+      r_js = malloc(sizeof(*r_js) * NUMBER_OF_JOBS_UL[ARRAY_SIZE]);
+      if (r_js == NULL) {
+        perror("Could not allocate memory for release dates");
+        return -1;
+      }
       old_instance_number = instance_number;
     }
   }
@@ -63,12 +70,12 @@ int load_csv(const char *filename, vector_t *vector) {
   // Adding last loaded instance
   instance_t *instance = malloc(sizeof(*instance));
   if (instance == NULL) {
-    fprintf(stderr, "Could not allocate instance\n");
+    perror("Could not allocate instance");
     return -1;
   }
   instance->number_of_jobs = number_of_jobs;
-  instance->processing_times = processing_times;
-  instance->release_dates = release_dates;
+  instance->processing_times = p_js;
+  instance->release_dates = r_js;
 
   if ((result = vector_add(vector, (void **)&instance)) != 0)
     return result;

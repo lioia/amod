@@ -1,15 +1,16 @@
 #pragma once
 
+#define ARRAY_SIZE 2
 #define NUMBER_OF_INSTANCES 5
 // Stream 0
 #define NUMBER_OF_JOBS_UL                                                      \
-  (int[]) { 10, 25, 50 }
+  (int[ARRAY_SIZE + 1]) { 15, 30, 45 }
 // Stream 1
 #define PROCESSING_TIMES_UL                                                    \
-  (int[]) { 5, 10, 15 }
+  (int[ARRAY_SIZE + 1]) { 15, 30, 45 }
 // Stream 2
 #define RELEASE_DATES_UL                                                       \
-  (int[]) { 5, 15, 25 }
+  (int[ARRAY_SIZE + 1]) { 15, 30, 45 }
 
 int generate(const char *filename);
 

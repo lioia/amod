@@ -26,8 +26,8 @@ typedef struct {
 typedef struct {
   size_t size;            // Number of variables
   solver_t solver;        // Type of model used
-  GRBmodel *model;        // Gurobi model
   int status;             // Status code from Gurobi
+  double runtime;         // Execution time
   double objective_value; // z*
   double *values;         // x*
 } solution_t;

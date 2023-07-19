@@ -37,24 +37,18 @@ int generate_command(int argc, char **argv) {
   printf("Generating instances in %s\n", filename);
   int result = generate(filename);
   if (result)
-    fprintf(stderr, "Error while generating instances\n");
+    perror("Error while generating instances");
   return result;
 }
 
 int run_command(int argc, char **argv) {
   int workers = 8;
   char *filename = "instances.csv";
-  if (argc == 3) {
-    workers = atoi(argv[2]);
-  } else if (argc == 4) {
-    workers = atoi(argv[2]);
-    if (workers < 1)
-      workers = 1;
+  if (argc == 3)
     filename = argv[3];
-  }
-  printf("Running simulation with %d threads on instances from %s\n", workers,
-         filename);
-  return run(workers, filename);
+
+  printf("Running simulation with on instances from %s\n", filename);
+  return run(filename);
 }
 
 int print_help_screen() {

@@ -6,15 +6,17 @@
 vector_t *vector_init() {
   vector_t *vector = malloc(sizeof(*vector));
   if (vector == NULL) {
-    fprintf(stderr, "Could not allocate memory for vector\n");
+    perror("Could not allocate memory for vector");
     return NULL;
   }
   void **values = malloc(sizeof(*values) * VECTOR_DEFAULT_SIZE);
   if (values == NULL) {
-    fprintf(stderr, "Could not allocate memory for vector values\n");
+    perror("Could not allocate memory for vector values");
     return NULL;
   }
-  memset(values, 0, sizeof(*values) * VECTOR_DEFAULT_SIZE);
+  for (size_t i = 0; i < VECTOR_DEFAULT_SIZE; i++) {
+    values[i] = NULL;
+  }
 
   vector->allocated_length = VECTOR_DEFAULT_SIZE;
   vector->length = 0;
@@ -30,11 +32,14 @@ int vector_add(vector_t *vector, void **value) {
 
     vector->values = realloc(vector->values, sizeof(*value) * new_size);
     if (vector->values == NULL) {
-      fprintf(stderr, "Could not reallocate vector values\n");
+      perror("Could not reallocate vector values");
       return -1;
     }
 
     vector->allocated_length = new_size;
+    for (size_t i = vector->length; i < VECTOR_DEFAULT_SIZE; i++) {
+      vector->values[i] = NULL;
+    }
   }
 
   vector->values[vector->length++] = *value;
@@ -42,6 +47,10 @@ int vector_add(vector_t *vector, void **value) {
 }
 
 int vector_free(vector_t *vector) {
+  for (size_t i = 0; i < vector->length; i++) {
+    free(vector->values[i]);
+    vector->values[i] = NULL;
+  }
   free(vector->values);
   free(vector);
   return 0;
@@ -53,7 +62,7 @@ int vector_refit(vector_t *vector) {
   vector->values =
       realloc(vector->values, sizeof(*vector->values) * vector->length);
   if (*vector->values == NULL) {
-    fprintf(stderr, "Could not reallocate memory for values\n");
+    perror("Could not reallocate memory for values");
     return -1;
   }
   vector->allocated_length = vector->length;
@@ -61,15 +70,20 @@ int vector_refit(vector_t *vector) {
 }
 
 int vector_reset(vector_t *vector) {
+  for (size_t i = 0; i < vector->length; i++) {
+    free(vector->values[i]);
+  }
   if (vector->allocated_length != VECTOR_DEFAULT_SIZE) {
     vector->values =
         realloc(vector->values, sizeof(*vector->values) * VECTOR_DEFAULT_SIZE);
     if (*vector->values == NULL) {
-      fprintf(stderr, "Could not rellocate memory for values when resetting\n");
+      perror("Could not rellocate memory for values when resetting");
       return -1;
     }
   }
-  memset(vector->values, 0, sizeof(*vector->values) * VECTOR_DEFAULT_SIZE);
+  for (size_t i = 0; i < VECTOR_DEFAULT_SIZE; i++) {
+    vector->values[i] = NULL;
+  }
   vector->length = 0;
   vector->allocated_length = VECTOR_DEFAULT_SIZE;
   return 0;
