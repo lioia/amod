@@ -34,7 +34,7 @@ int run(const char *filename) {
   fprintf(solution_fp, "Solver,Instance,Status,Runtime\n");
 
   // TODO: change TimeIndexed to Heuristics when implemented
-  for (solver_t solver = Positional; solver <= TimeIndexed; solver++) {
+  for (solver_t solver = Precedence; solver <= TimeIndexed; solver++) {
     printf("---------------------------\n");
     printf("\tSolver: %d\n", solver);
     for (size_t i = 0; i < sim->instances->length; i++) {
@@ -86,7 +86,7 @@ simulation_t *environment_init(vector_t *instances) {
     return NULL;
   }
 
-  printf("Environment started correctly");
+  printf("Environment started correctly\n");
 
   return sim;
 }

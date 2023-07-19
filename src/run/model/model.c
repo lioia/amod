@@ -125,12 +125,14 @@ int model_precedence_create(simulation_t *sim, instance_t *instance) {
     names[j] = name;
   }
 
-  for (size_t i = 0; i < n - 1; i++) {
+  size_t index = n;
+  for (size_t i = 0; i < n; i++) {
     for (size_t j = i + 1; j < n; j++) {
       char *name = formatted_string("x_(%ld,%ld)", i + 1, j + 1);
       if (name == NULL)
         name = "x_(i,j)";
-      names[n + i + j - 1] = name;
+      names[index] = name;
+      index += 1;
     }
   }
 
@@ -139,17 +141,16 @@ int model_precedence_create(simulation_t *sim, instance_t *instance) {
     log_error(sim, result, "GRBaddvars");
     return result;
   }
-  return 0;
 
   // M > sum_(j in J) p_j + max{r_j}
-  int big_m = 0;
+  int big_m = 1;
   int max_r_j = 0;
   for (size_t j = 0; j < n; j++) {
     big_m += instance->processing_times[j];
     if (instance->release_dates[j] > max_r_j)
       max_r_j = instance->release_dates[j];
   }
-  big_m += max_r_j; // FIXME: maybe +1 (also in big_t for time-indexed)
+  big_m += max_r_j;
 
   size_t c_size = 1;
   int *c_index = malloc(sizeof(*c_index) * c_size);
@@ -176,7 +177,7 @@ int model_precedence_create(simulation_t *sim, instance_t *instance) {
 
     if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
                                GRB_GREATER_EQUAL, rhs, NULL)) != 0) {
-      perror(formatted_string("Constraint j %ld", j));
+      perror(formatted_string("Constraint C_j >= p_j + r_j: j = %ld", j));
       log_error(sim, result, "GRBaddconstr");
       c_print(c_size, c_index, c_vals, names);
       return result;
@@ -188,19 +189,20 @@ int model_precedence_create(simulation_t *sim, instance_t *instance) {
     return result;
 
   // C_i <= C_j - p_j + M(1 - x_(i j)) 1 <= i < j <= n
+  index = n;
   for (size_t i = 0; i < n; i++) {
     for (size_t j = i + 1; j < n; j++) {
       c_index[0] = i;
       c_vals[0] = 1;
       c_index[1] = j;
       c_vals[1] = -1;
-      c_index[2] = i + j + 2;
+      c_index[2] = index;
       c_vals[2] = big_m;
       double rhs = big_m - instance->processing_times[j];
 
       if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
                                  GRB_LESS_EQUAL, rhs, NULL)) != 0) {
-        perror(formatted_string("Constraint i = %ld, j = %ld", i, j));
+        perror(formatted_string("big M constraint 1: i = %ld, j = %ld", i, j));
         log_error(sim, result, "GRBaddconstr");
         c_print(c_size, c_index, c_vals, names);
         return result;
@@ -213,19 +215,20 @@ int model_precedence_create(simulation_t *sim, instance_t *instance) {
     return result;
 
   // C_j <= C_i - p_i + M x_(i j) 1 <= i < j <= n
+  index = n;
   for (size_t i = 0; i < n; i++) {
     for (size_t j = i + 1; j < n; j++) {
       c_index[0] = j;
       c_vals[0] = 1;
       c_index[1] = i;
       c_vals[1] = -1;
-      c_index[2] = i + j + 2;
+      c_index[2] = index++;
       c_vals[2] = -big_m;
       double rhs = -instance->processing_times[i];
 
       if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
                                  GRB_LESS_EQUAL, rhs, NULL)) != 0) {
-        perror(formatted_string("Constraint i = %ld, j = %ld", i, j));
+        perror(formatted_string("big M constraint 2: i = %ld, j = %ld", i, j));
         log_error(sim, result, "GRBaddconstr");
         c_print(c_size, c_index, c_vals, names);
         return result;
@@ -460,7 +463,7 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
   int result = 0;
   int n = instance->number_of_jobs;
 
-  int big_t = 0;
+  int big_t = 1;
   int max_r_j = 0;
   for (size_t j = 0; j < n; j++) {
     big_t += instance->processing_times[j];
@@ -670,6 +673,7 @@ void c_print(int size, int *index, double *vals, char **names) {
     if (i == size - 1)
       printf("");
   }
+  printf("\n");
 }
 
 int realloc_constr(int **constr_index, double **constr_vals, size_t size) {
