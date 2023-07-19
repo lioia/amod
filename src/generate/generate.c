@@ -1,10 +1,18 @@
 #include "generate.h"
+#include "../utils/agnostic_io.h"
+#include "../utils/strings.h"
 #include <stdio.h>
 #include <time.h>
 
-int generate(const char *filename) {
+int generate(const char *folder, const char *filename) {
+  int result = 0;
+  if ((result = create_folder(folder)) != 0) {
+    perror("Could not create output folder");
+    return result;
+  }
+
   FILE *fp;
-  if ((fp = fopen(filename, "w")) == NULL)
+  if ((fp = fopen(formatted_string("%s/%s", folder, filename), "w")) == NULL)
     return -1;
   fprintf(fp, "Instance,ProcessingTime,ReleaseDate\n");
 
@@ -24,18 +32,17 @@ int generate(const char *filename) {
           int number_of_jobs = uniform(1, number_of_jobs_ul);
           for (size_t job = 0; job < number_of_jobs; job++) {
             select_stream(1);
-            int processing_time = uniform(1, processing_time_ul);
+            int p_j = uniform(1, processing_time_ul);
             select_stream(2);
-            int release_date = uniform(1, release_date_ul);
-            fprintf(fp, "%d,%d,%d\n", instance_count, processing_time,
-                    release_date);
+            int r_j = uniform(1, release_date_ul);
+            fprintf(fp, "%d,%d,%d\n", instance_count, p_j, r_j);
           }
         }
       }
     }
   }
   fclose(fp);
-  printf("Generated %d instances\n", instance_count);
+  printf("Generated %d instances in %s/%s\n", instance_count, folder, filename);
   return 0;
 }
 

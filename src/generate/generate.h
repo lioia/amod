@@ -4,15 +4,15 @@
 #define NUMBER_OF_INSTANCES 5
 // Stream 0
 #define NUMBER_OF_JOBS_UL                                                      \
-  (int[ARRAY_SIZE + 1]) { 15, 30, 45 }
+  (int[ARRAY_SIZE + 1]) { 15, 30, 50 }
 // Stream 1
 #define PROCESSING_TIMES_UL                                                    \
-  (int[ARRAY_SIZE + 1]) { 15, 30, 45 }
+  (int[ARRAY_SIZE + 1]) { 15, 30, 50 }
 // Stream 2
 #define RELEASE_DATES_UL                                                       \
-  (int[ARRAY_SIZE + 1]) { 15, 30, 45 }
+  (int[ARRAY_SIZE + 1]) { 15, 30, 50 }
 
-int generate(const char *filename);
+int generate(const char *folder, const char *filename);
 
 // from rngs in Discrete Event Simulation, Leemis Park
 #define MODULUS 2147483647 /* DON'T CHANGE THIS VALUE                  */

@@ -7,6 +7,12 @@ Performance comparison for $1|r_j|\sum{C_j}$ problem with 4 different models:
 - time-indexed variables
 - custom heuristics
 
+## Supported OS
+
+- Linux is officially supported and tested. 
+- macOS should work out-of-the box.
+- Windows support is present but untested
+
 ## Building
 
 ```bash

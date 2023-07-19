@@ -8,17 +8,6 @@ int print_help_screen();
 int generate_command(int argc, char **argv);
 int run_command(int argc, char **argv);
 
-/*
- *  Usage:
- *    ./amod: show help screen
- *    ./amod --help: show help screen
- *    ./amod generate file: generate 100 instances with
- * different hard-coded parameters
- *    ./amod run workers file: run instances from  with x
- * threads
- *
- *    instances.csv: instance_number,release_date,processing_time
- * */
 int main(int argc, char **argv) {
   if (argc > 1) {
     if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-H"))
@@ -30,12 +19,13 @@ int main(int argc, char **argv) {
 }
 
 int generate_command(int argc, char **argv) {
+  char *folder = "output";
   char *filename = "instances.csv";
-  if (argc == 3) {
-    filename = argv[2];
+  if (argc == 4) {
+    folder = argv[3];
+    filename = argv[3];
   }
-  printf("Generating instances in %s\n", filename);
-  int result = generate(filename);
+  int result = generate(folder, filename);
   if (result)
     perror("Error while generating instances");
   return result;
@@ -43,7 +33,7 @@ int generate_command(int argc, char **argv) {
 
 int run_command(int argc, char **argv) {
   int workers = 8;
-  char *filename = "instances.csv";
+  char *filename = "output/instances.csv";
   if (argc == 3)
     filename = argv[3];
 
@@ -53,12 +43,11 @@ int run_command(int argc, char **argv) {
 
 int print_help_screen() {
   printf("AMOD Project\n\n");
-  printf("Usage: amod [COMMAND]\n\n");
-  printf("Commands:\n");
-  printf("\thelp\t\t\t\tShow help screen\n");
-  printf("\tgenerate [filename]\t\tGenerate instances in filename (default: "
-         "instances.csv)\n");
-  printf("\trun [workers] [filename]\tRun simulation (default: workers: 8, "
-         "filename: instances.csv)\n");
+  printf("Usage:\n");
+  printf(
+      "\tamod [filename]\t\t\tRun simulation (default: output/instances.csv\n");
+  printf("\tamod help\t\t\tShow help screen\n");
+  printf("\tamod generate [folder filename]\tGenerate instances in filename "
+         "(default: output instances.csv)\n");
   return 0;
 }
