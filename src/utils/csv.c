@@ -25,7 +25,7 @@ int load_csv(const char *filename, vector_t *vector) {
     return -1;
   }
 
-  int *r_js = malloc(sizeof(*r_js) * NUMBER_OF_JOBS_UL[2]);
+  int *r_js = malloc(sizeof(*r_js) * NUMBER_OF_JOBS_UL[ARRAY_SIZE]);
   if (r_js == NULL) {
     perror("Could not allocate release dates");
     return -1;
