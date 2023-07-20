@@ -33,15 +33,21 @@ int model_init(simulation_t *sim, int instance_number, solver_t solver,
 
   switch (solver) {
   case Precedence:
-    return model_precedence_create(sim, instance);
+    result = model_precedence_create(sim, instance);
+    break;
   case Positional:
-    return model_positional_create(sim, instance);
+    result = model_positional_create(sim, instance);
+    break;
   case TimeIndexed:
-    return model_time_indexed_create(sim, instance);
+    result = model_time_indexed_create(sim, instance);
+    break;
   case Heuristics:
-    return model_heuristics_create(sim, instance, heuristic_value);
+    result = model_heuristics_create(sim, instance, heuristic_value);
+    break;
   }
-  return 0;
+  free(name);
+  name = NULL;
+  return result;
 }
 
 solution_t *model_optimize(simulation_t *sim, int i, solver_t solver) {

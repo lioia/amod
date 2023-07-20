@@ -46,6 +46,16 @@ int load_csv(const char *filename, vector_t *vector) {
         perror("Could not allocate instance");
         return -1;
       }
+      p_js = realloc(p_js, sizeof(*p_js) * number_of_jobs);
+      if (p_js == NULL) {
+        perror("Could not allocate memory for processing times");
+        return -1;
+      }
+      r_js = realloc(r_js, sizeof(*r_js) * number_of_jobs);
+      if (r_js == NULL) {
+        perror("Could not allocate memory for release dates");
+        return -1;
+      }
       instance->number_of_jobs = number_of_jobs;
       instance->processing_times = p_js;
       instance->release_dates = r_js;

@@ -39,8 +39,11 @@ int run(const char *filename) {
   if (sim == NULL)
     return -1;
 
-  for (solver_t solver = Precedence; solver <= Heuristics; solver++) {
-    if (create_folder(formatted_string("output/%d", solver)) != 0) {
+  for (solver_t solver = Precedence; solver <= Precedence; solver++) {
+    char *solver_folder = formatted_string("output/%d", solver);
+    if (solver_folder == NULL)
+      solver_folder = "output/unknown";
+    if (create_folder(solver_folder) != 0) {
       perror(formatted_string("Could not create folder output/%d", solver));
       continue;
     }
@@ -66,7 +69,14 @@ int run(const char *filename) {
               solution->heuristic_value);
       save_model(sim, i, solver, "json");
       save_model(sim, i, solver, "sol");
+
+      free(solution->values);
+      solution->values = NULL;
+      free(solution);
+      solution = NULL;
     }
+    free(solver_folder);
+    solver_folder = NULL;
   }
 
   if ((result = simulation_free(sim)) != 0)
@@ -112,6 +122,10 @@ int simulation_free(simulation_t *sim) {
     instance_t *instance = sim->instances->values[i];
     GRBfreemodel(instance->model);
     instance->model = NULL;
+    free(instance->processing_times);
+    instance->processing_times = NULL;
+    free(instance->release_dates);
+    instance->release_dates = NULL;
   }
   vector_free(sim->instances);
   sim->instances = NULL;
@@ -130,4 +144,6 @@ void save_model(simulation_t *sim, size_t i, solver_t solver, char *format) {
     if ((result = GRBwrite(instance->model, name)) != 0)
       log_error(sim, result, "GRBwrite");
   }
+  free(name);
+  name = NULL;
 }
