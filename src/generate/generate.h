@@ -1,7 +1,7 @@
 #pragma once
 
-#define ARRAY_SIZE 2
-#define NUMBER_OF_INSTANCES 5
+#define ARRAY_SIZE 4
+#define NUMBER_OF_INSTANCES 10
 // Stream 0
 #define NUMBER_OF_JOBS_UL                                                      \
   (int[ARRAY_SIZE + 1]) { 15, 30, 50 }
