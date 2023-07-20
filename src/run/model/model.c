@@ -1,5 +1,5 @@
 #include "model.h"
-#include "../../utils/strings.h"
+#include "../../utils/utils.h"
 #include "../run.h"
 #include "gurobi_c.h"
 #include <stdio.h>
@@ -10,7 +10,8 @@ void c_print(int size, int *index, double *vals, char **names);
 int realloc_constr(int **constr_index, double **constr_vals, size_t size);
 tuple_t *create_tuple(int index, double val);
 
-int model_init(simulation_t *sim, int instance_number, solver_t solver) {
+int model_init(simulation_t *sim, int instance_number, solver_t solver,
+               int *heuristic_value) {
   instance_t *instance = sim->instances->values[instance_number];
   int result = 0;
 
@@ -37,15 +38,15 @@ int model_init(simulation_t *sim, int instance_number, solver_t solver) {
     return model_positional_create(sim, instance);
   case TimeIndexed:
     return model_time_indexed_create(sim, instance);
-    // TODO: Heuristics case
+  case Heuristics:
+    return model_heuristics_create(sim, instance, heuristic_value);
   }
   return 0;
 }
 
-solution_t *model_optimize(simulation_t *sim, int instance_number,
-                           solver_t solver) {
+solution_t *model_optimize(simulation_t *sim, int i, solver_t solver) {
   int result;
-  instance_t *instance = sim->instances->values[instance_number];
+  instance_t *instance = sim->instances->values[i];
 
   double *values = malloc(sizeof(*values) * instance->number_of_jobs);
   if (values == NULL) {
@@ -62,6 +63,7 @@ solution_t *model_optimize(simulation_t *sim, int instance_number,
   solution->solver = solver;
   solution->size = instance->number_of_jobs;
   solution->values = values;
+  solution->heuristic_value = -1;
 
   if ((result = GRBoptimize(instance->model)) != 0) {
     log_error(sim, result, "GRBoptimize");
@@ -659,6 +661,43 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
   free(c_vals);
   c_vals = NULL;
 
+  return result;
+}
+
+int model_heuristics_create(simulation_t *sim, instance_t *instance,
+                            int *heuristic_value) {
+  int result = 0;
+  sort(instance);
+  int *c_hs = malloc(sizeof(*c_hs) * instance->number_of_jobs);
+  if (c_hs == NULL) {
+    perror("Could not allocate memory for C_js");
+    return -1;
+  }
+  c_hs[0] = instance->release_dates[0] + instance->processing_times[0];
+  *heuristic_value = c_hs[0];
+  for (size_t i = 1; i < instance->number_of_jobs; i++) {
+    // Current job start when previous job finished
+    int s_h = c_hs[i - 1];
+    // The next job is not released -> adding idle time until it's released
+    if (s_h < instance->release_dates[i])
+      s_h += instance->release_dates[i] - c_hs[i - 1];
+    int c_h = s_h + instance->processing_times[i];
+
+    c_hs[i] = c_h;
+    *heuristic_value += c_h;
+  }
+  if ((result = model_positional_create(sim, instance)) != 0) {
+    perror("Could not create positional model for heuristic case");
+    return result;
+  }
+
+  for (size_t i = 0; i < instance->number_of_jobs; i++) {
+    if ((result = GRBsetdblattrelement(instance->model, "Start", i,
+                                       (double)c_hs[i])) != 0) {
+      log_error(sim, result, "GRBsetdblattrelement(\"Start\")");
+      return result;
+    }
+  }
   return result;
 }
 

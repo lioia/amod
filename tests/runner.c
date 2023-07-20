@@ -9,6 +9,7 @@
 solution_t *model_precedence_test(simulation_t *simulation);
 solution_t *model_positional_test(simulation_t *simulation);
 solution_t *model_timeindexed_test(simulation_t *simulation);
+solution_t *model_heuristics_test(simulation_t *simulation);
 
 int main(void) {
   int result = 0;
@@ -29,30 +30,46 @@ int main(void) {
   if ((result = vector_add(instances, (void **)&dummy_instance)) != 0)
     return result;
   simulation_t *sim = environment_init(instances);
+  solution_t *solution;
 
   // Execute tests
-  // printf("---------------------------");
-  // printf("Model Precedence Test");
-  // solution = model_precedence_test(sim);
-  // if (solution == NULL)
-  //   perror("Model Precedence Test failed");
-  // printf("---------------------------");
-  // printf("Model Positional Test\n");
-  // solution_t *solution = model_positional_test(sim);
-  // if (solution == NULL)
-  //   perror("Model Positional Test failed");
-  printf("---------------------------");
+  printf("---------------------------\n");
+  printf("Model Precedence Test");
+  solution = model_precedence_test(sim);
+  if (solution == NULL) {
+    result = -1;
+    perror("Model Precedence Test failed");
+  }
+  printf("---------------------------\n");
+  printf("Model Positional Test\n");
+  solution = model_positional_test(sim);
+  if (solution == NULL) {
+    result = -1;
+    perror("Model Positional Test failed");
+  }
+  printf("---------------------------\n");
   printf("Model Time Indexed Test\n");
-  solution_t *solution = model_timeindexed_test(sim);
-  if (solution == NULL)
+  solution = model_timeindexed_test(sim);
+  if (solution == NULL) {
+    result = -1;
     perror("Model Time Indexed Test failed");
-  printf("---------------------------");
+  }
+  printf("---------------------------\n");
+  printf("Model Time Indexed Test\n");
+  solution = model_heuristics_test(sim);
+  if (solution == NULL) {
+    result = -1;
+    perror("Model Heuristics Test failed");
+  }
+  printf("---------------------------\n");
 
   // Teardown
-  free(solution->values);
-  solution->values = NULL;
-  free(solution);
-  solution = NULL;
+  if (solution != NULL) {
+    free(solution->values);
+    solution->values = NULL;
+    free(solution);
+    solution = NULL;
+  }
   if ((result = simulation_free(sim)) != 0)
     return result;
   return result;
@@ -60,7 +77,7 @@ int main(void) {
 
 solution_t *model_precedence_test(simulation_t *simulation) {
   instance_t *instance = simulation->instances->values[0];
-  if (model_init(simulation, 0, Precedence) != 0) {
+  if (model_init(simulation, 0, Precedence, NULL) != 0) {
     perror("Could not init model");
     return NULL;
   }
@@ -74,7 +91,7 @@ solution_t *model_precedence_test(simulation_t *simulation) {
 
 solution_t *model_positional_test(simulation_t *simulation) {
   instance_t *instance = simulation->instances->values[0];
-  if (model_init(simulation, 0, Positional) != 0) {
+  if (model_init(simulation, 0, Positional, NULL) != 0) {
     perror("Could not init model");
     return NULL;
   }
@@ -88,7 +105,7 @@ solution_t *model_positional_test(simulation_t *simulation) {
 
 solution_t *model_timeindexed_test(simulation_t *simulation) {
   instance_t *instance = simulation->instances->values[0];
-  if (model_init(simulation, 0, TimeIndexed) != 0) {
+  if (model_init(simulation, 0, TimeIndexed, NULL) != 0) {
     perror("Could not init model");
     return NULL;
   }
@@ -99,4 +116,22 @@ solution_t *model_timeindexed_test(simulation_t *simulation) {
   }
 
   return model_optimize(simulation, 0, TimeIndexed);
+}
+
+solution_t *model_heuristics_test(simulation_t *simulation) {
+  int heuristic_value;
+  instance_t *instance = simulation->instances->values[0];
+  if (model_init(simulation, 0, Heuristics, &heuristic_value) != 0) {
+    perror("Could not init model");
+    return NULL;
+  }
+
+  if (GRBwrite(instance->model, "heuristic.lp") != 0) {
+    perror("Could not write heuristic.lp");
+    return NULL;
+  }
+  solution_t *solution = model_optimize(simulation, 0, Positional);
+  if (solution != NULL)
+    solution->heuristic_value = heuristic_value;
+  return solution;
 }

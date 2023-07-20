@@ -1,11 +1,12 @@
 #include "run.h"
-#include "../utils/agnostic_io.h"
 #include "../utils/csv.h"
-#include "../utils/strings.h"
+#include "../utils/utils.h"
 #include "gurobi_c.h"
 #include "model/model.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+void save_model(simulation_t *sim, size_t i, solver_t solver, char *format);
 
 int run(const char *filename) {
   int result = 0;
@@ -32,56 +33,39 @@ int run(const char *filename) {
     perror("Could not open solution.csv");
     return -1;
   }
-  fprintf(sol_fp, "Solver,Instance,Status,Runtime\n");
+  fprintf(sol_fp, "Solver,Instance,Status,Runtime,Solution,Heuristic\n");
 
   simulation_t *sim = environment_init(instances);
   if (sim == NULL)
     return -1;
 
-  // TODO: change TimeIndexed to Heuristics when implemented
-  for (solver_t solver = Precedence; solver <= TimeIndexed; solver++) {
+  for (solver_t solver = Precedence; solver <= Heuristics; solver++) {
     if (create_folder(formatted_string("output/%d", solver)) != 0) {
       perror(formatted_string("Could not create folder output/%d", solver));
       continue;
     }
     for (size_t i = 0; i < sim->instances->length; i++) {
+      int heuristic_value = -1;
       instance_t *instance = sim->instances->values[i];
-      if ((result = model_init(sim, i, solver)) != 0) {
+      if ((result = model_init(sim, i, solver, &heuristic_value)) != 0) {
         fprintf(error_fp, "%d,%ld,Init\n", solver, i + 1);
         continue;
       }
 
-      char *lp_name = formatted_string("output/%d/%ld.lp", solver, i);
-      if (lp_name == NULL)
-        lp_name = "output/unknown.lp";
-      if ((result = GRBwrite(instance->model, lp_name)) != 0)
-        log_error(sim, result, "GRBwrite lp");
-
-      char *mps_name = formatted_string("output/%d/%ld.mps", solver, i);
-      if (lp_name == NULL)
-        lp_name = "output/unknown.mps";
-      if ((result = GRBwrite(instance->model, lp_name)) != 0)
-        log_error(sim, result, "GRBwrite mps");
+      save_model(sim, i, solver, "lp");
+      save_model(sim, i, solver, "mps");
 
       solution_t *solution = model_optimize(sim, i, solver);
       if (solution == NULL) {
         fprintf(error_fp, "%d,%ld,Optimize\n", solver, i + 1);
         continue;
       }
-      fprintf(sol_fp, "%d,%ld,%d,%.2f\n", solver, i + 1, solution->status,
-              solution->runtime);
-
-      char *json_name = formatted_string("output/%d/%ld.json", solver, i);
-      if (json_name == NULL)
-        json_name = "output/unknown.json";
-      if ((result = GRBwrite(instance->model, json_name)) != 0)
-        log_error(sim, result, "GRBwrite json");
-
-      char *sol_name = formatted_string("output/%d/%ld.sol", solver, i);
-      if (sol_name == NULL)
-        json_name = "output/unknown.sol";
-      if ((result = GRBwrite(instance->model, sol_name)) != 0)
-        log_error(sim, result, "GRBwrite sol");
+      solution->heuristic_value = heuristic_value;
+      fprintf(sol_fp, "%d,%ld,%d,%.2f,%.2f,%.2f\n", solver, i + 1,
+              solution->status, solution->runtime, solution->objective_value,
+              solution->heuristic_value);
+      save_model(sim, i, solver, "json");
+      save_model(sim, i, solver, "sol");
     }
   }
 
@@ -108,10 +92,10 @@ simulation_t *environment_init(vector_t *instances) {
     return NULL;
   }
 
-  if ((result = GRBsetstrparam(sim->env, "LogFile", "model.log")) != 0) {
-    log_error(sim, result, "GRBsetstrparam(\"LogFile\")");
-    return NULL;
-  }
+  // if ((result = GRBsetstrparam(sim->env, "LogFile", "model.log")) != 0) {
+  //   log_error(sim, result, "GRBsetstrparam(\"LogFile\")");
+  //   return NULL;
+  // }
 
   if ((result = GRBstartenv(sim->env)) != 0) {
     log_error(sim, result, "GRBstartenv");
@@ -136,4 +120,14 @@ int simulation_free(simulation_t *sim) {
   free(sim);
   sim = NULL;
   return 0;
+}
+
+void save_model(simulation_t *sim, size_t i, solver_t solver, char *format) {
+  int result = 0;
+  instance_t *instance = sim->instances->values[i];
+  char *name = formatted_string("output/%d/%ld.%s", solver, i, format);
+  if (name != NULL) {
+    if ((result = GRBwrite(instance->model, name)) != 0)
+      log_error(sim, result, "GRBwrite");
+  }
 }

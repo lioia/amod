@@ -1,6 +1,5 @@
 #include "generate.h"
-#include "../utils/agnostic_io.h"
-#include "../utils/strings.h"
+#include "../utils/utils.h"
 #include <stdio.h>
 #include <time.h>
 
@@ -20,11 +19,11 @@ int generate(const char *folder, const char *filename) {
 
   int instance_count = 0;
 
-  for (size_t i = 0; i < 3; i++) {
+  for (size_t i = 0; i < ARRAY_SIZE + 1; i++) {
     int number_of_jobs_ul = NUMBER_OF_JOBS_UL[i];
-    for (size_t j = 0; j < 3; j++) {
+    for (size_t j = 0; j < ARRAY_SIZE + 1; j++) {
       int processing_time_ul = PROCESSING_TIMES_UL[j];
-      for (size_t k = 0; k < 3; k++) {
+      for (size_t k = 0; k < ARRAY_SIZE + 1; k++) {
         int release_date_ul = RELEASE_DATES_UL[k];
         for (size_t l = 0; l < NUMBER_OF_INSTANCES; l++) {
           instance_count += 1;

@@ -1,7 +1,7 @@
 #include "csv.h"
 #include "../generate/generate.h"
 #include "entities.h"
-#include "strings.h"
+#include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

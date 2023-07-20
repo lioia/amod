@@ -3,7 +3,7 @@
 #include "gurobi_c.h"
 #define VECTOR_DEFAULT_SIZE 32
 
-typedef enum { Precedence, Positional, TimeIndexed /*, Heuristics*/ } solver_t;
+typedef enum { Precedence, Positional, TimeIndexed, Heuristics } solver_t;
 
 typedef struct {
   int number_of_jobs;
@@ -30,6 +30,7 @@ typedef struct {
   double runtime;         // Execution time
   double objective_value; // z*
   double *values;         // x*
+  double heuristic_value; // -1 if it's not heuristics
 } solution_t;
 
 // Create new vector
