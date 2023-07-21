@@ -23,6 +23,7 @@ int main(void) {
   dummy_instance->number_of_jobs = 3;
   dummy_instance->processing_times = processing_times;
   dummy_instance->release_dates = release_dates;
+  dummy_instance->model = NULL;
 
   vector_t *instances = vector_init();
   if (instances == NULL)
@@ -82,7 +83,7 @@ solution_t *model_precedence_test(simulation_t *simulation) {
     return NULL;
   }
 
-  if (GRBwrite(instance->model, "precedence.lp") != 0) {
+  if (GRBwrite(instance->model, "output/precedence.lp") != 0) {
     perror("Could not write precedence.lp");
     return NULL;
   }
@@ -96,7 +97,7 @@ solution_t *model_positional_test(simulation_t *simulation) {
     return NULL;
   }
 
-  if (GRBwrite(instance->model, "positional.lp") != 0) {
+  if (GRBwrite(instance->model, "output/positional.lp") != 0) {
     perror("Could not write positional.lp");
     return NULL;
   }
@@ -110,7 +111,7 @@ solution_t *model_timeindexed_test(simulation_t *simulation) {
     return NULL;
   }
 
-  if (GRBwrite(instance->model, "timeindexed.lp") != 0) {
+  if (GRBwrite(instance->model, "output/timeindexed.lp") != 0) {
     perror("Could not write timeindexed.lp");
     return NULL;
   }
@@ -126,7 +127,7 @@ solution_t *model_heuristics_test(simulation_t *simulation) {
     return NULL;
   }
 
-  if (GRBwrite(instance->model, "heuristic.lp") != 0) {
+  if (GRBwrite(instance->model, "output/heuristic.lp") != 0) {
     perror("Could not write heuristic.lp");
     return NULL;
   }
