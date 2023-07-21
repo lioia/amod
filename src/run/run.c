@@ -56,7 +56,6 @@ int run(const char *filename) {
       }
 
       save_model(sim, i, solver, "lp");
-      save_model(sim, i, solver, "mps");
 
       solution_t *solution = model_optimize(sim, i, solver);
       if (solution == NULL) {
@@ -67,7 +66,7 @@ int run(const char *filename) {
       fprintf(sol_fp, "%d,%ld,%d,%.2f,%.2f,%.2f\n", solver, i + 1,
               solution->status, solution->runtime, solution->objective_value,
               solution->heuristic_value);
-      save_model(sim, i, solver, "json");
+
       save_model(sim, i, solver, "sol");
 
       if ((result = GRBfreemodel(instance->model)) != 0)
