@@ -39,7 +39,7 @@ int run(const char *filename) {
   if (sim == NULL)
     return -1;
 
-  for (solver_t solver = Precedence; solver <= Precedence; solver++) {
+  for (solver_t solver = Precedence; solver <= Heuristics; solver++) {
     char *solver_folder = formatted_string("output/%d", solver);
     if (solver_folder == NULL)
       solver_folder = "output/unknown";
@@ -69,6 +69,10 @@ int run(const char *filename) {
               solution->heuristic_value);
       save_model(sim, i, solver, "json");
       save_model(sim, i, solver, "sol");
+
+      if ((result = GRBfreemodel(instance->model)) != 0)
+        log_error(sim, result, "GRBfreemodel");
+      instance->model = NULL;
 
       free(solution->values);
       solution->values = NULL;
@@ -102,11 +106,6 @@ simulation_t *environment_init(vector_t *instances) {
     return NULL;
   }
 
-  // if ((result = GRBsetstrparam(sim->env, "LogFile", "model.log")) != 0) {
-  //   log_error(sim, result, "GRBsetstrparam(\"LogFile\")");
-  //   return NULL;
-  // }
-
   if ((result = GRBstartenv(sim->env)) != 0) {
     log_error(sim, result, "GRBstartenv");
     return NULL;
@@ -118,15 +117,6 @@ simulation_t *environment_init(vector_t *instances) {
 }
 
 int simulation_free(simulation_t *sim) {
-  for (size_t i = 0; i < sim->instances->length; i++) {
-    instance_t *instance = sim->instances->values[i];
-    GRBfreemodel(instance->model);
-    instance->model = NULL;
-    free(instance->processing_times);
-    instance->processing_times = NULL;
-    free(instance->release_dates);
-    instance->release_dates = NULL;
-  }
   vector_free(sim->instances);
   sim->instances = NULL;
   GRBfreeenv(sim->env);

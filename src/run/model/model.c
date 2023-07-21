@@ -480,45 +480,38 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
   }
   big_t += max_r_j;
 
-  vector_t *tuples = vector_init();
-  if (tuples == NULL)
-    return -1;
+  int size = 0;
   for (size_t j = 0; j < n; j++) {
-    int number_of_vars = big_t - instance->processing_times[j] + 1;
-    for (size_t t = 0; t < number_of_vars; t++) {
-      tuple_t *tuple =
-          create_tuple(0, t + 1 + instance->processing_times[j] - 1);
-      if (tuple == NULL)
-        return -1;
-      if ((result = vector_add(tuples, (void **)&tuple)) != 0)
-        return result;
-    }
+    size += big_t - instance->processing_times[j] + 1;
   }
-  int total_vars = tuples->length;
 
-  double *vars = malloc(sizeof(*vars) * total_vars);
+  size_t index = 0;
+  double *vars = malloc(sizeof(*vars) * size);
   if (vars == NULL) {
     perror("Could not allocate memory for vars");
     return -1;
   }
-  for (size_t i = 0; i < tuples->length; i++) {
-    tuple_t *tuple = tuples->values[i];
-    vars[i] = tuple->val;
+  for (size_t j = 0; j < n; j++) {
+    for (size_t t = 0; t < big_t - instance->processing_times[j] + 1; t++) {
+      vars[index] = t + 1 + instance->processing_times[j] - 1;
+      index += 1;
+    }
   }
 
-  char *var_types = malloc(sizeof(*var_types) * total_vars);
+  char *var_types = malloc(sizeof(*var_types) * size);
   if (var_types == NULL) {
     perror("Could not allocate memory for var_types");
     return -1;
   }
-  memset(var_types, GRB_BINARY, sizeof(*var_types) * tuples->length);
+  memset(var_types, GRB_BINARY, sizeof(*var_types) * size);
 
-  char **names = malloc(sizeof(*names) * total_vars);
+  char **names = malloc(sizeof(*names) * size);
   if (names == NULL) {
     perror("Could not allocate memory for names");
     return -1;
   }
-  size_t index = 0;
+
+  index = 0;
   for (size_t j = 0; j < n; j++) {
     for (size_t t = 0; t < big_t - instance->processing_times[j] + 1; t++) {
       char *name = formatted_string("x_(%ld,%ld)", j + 1, t + 1);
@@ -528,8 +521,8 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
     }
   }
 
-  if ((result = GRBaddvars(instance->model, tuples->length, 0, NULL, NULL, NULL,
-                           vars, NULL, NULL, var_types, names)) != 0) {
+  if ((result = GRBaddvars(instance->model, size, 0, NULL, NULL, NULL, vars,
+                           NULL, NULL, var_types, names)) != 0) {
     log_error(sim, result, "GRBaddvars");
     return result;
   }
@@ -551,26 +544,16 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
   // sum_(t = 1)^(T - p_j + 1) x_(j t) = 1 forall j in J
   int offset_j = 0;
   for (size_t j = 0; j < n; j++) {
+    index = 0;
     c_size = big_t - instance->processing_times[j] + 1;
-
-    if ((result = vector_reset(tuples)) != 0)
-      return result;
-
-    for (size_t t = 0; t < c_size; t++) {
-      tuple_t *tuple = create_tuple(offset_j + t, 1);
-      if (tuple == NULL)
-        return -1;
-      if ((result = vector_add(tuples, (void **)&tuple)) != 0)
-        return result;
-    }
 
     if ((result = realloc_constr(&c_index, &c_vals, c_size)) != 0)
       return result;
 
-    for (size_t i = 0; i < tuples->length; i++) {
-      tuple_t *tuple = tuples->values[i];
-      c_index[i] = tuple->index;
-      c_vals[i] = tuple->val;
+    for (size_t t = 0; t < c_size; t++) {
+      c_index[index] = offset_j + t;
+      c_vals[index] = 1;
+      index += 1;
     }
 
     if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
@@ -583,45 +566,40 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
     offset_j += big_t - instance->processing_times[j] + 1;
   }
 
-  // sum_(j in J) sum_(t = max{0,tau-p_j+1})^T x_(j t) <= 1 forall tau=1,...T
+  // sum_(j in J) sum_(t = max{0,tau-p_j+1})^tau x_(j t) <= 1 forall tau=1,...T
   for (size_t tau = 0; tau < big_t; tau++) {
-    if ((result = vector_reset(tuples)) != 0)
-      return -1;
+    index = 0;
+    c_size = 0;
     offset_j = 0;
     for (size_t j = 0; j < n; j++) {
       int max = tau - instance->processing_times[j] + 1;
       if (max < 0)
         max = 0;
-      if (big_t - tau < instance->processing_times[j]) {
+      // There are not enough time slots to process the entire job
+      if (big_t - tau < instance->processing_times[j] || tau - max == 0) {
         offset_j += big_t - instance->processing_times[j] + 1;
         continue;
       }
+      c_size += tau - max + 1;
+
+      if ((result = realloc_constr(&c_index, &c_vals, c_size)) != 0)
+        return result;
       for (size_t t = max; t <= tau; t++) {
-        tuple_t *tuple = create_tuple(offset_j + t, 1);
-        if (tuple == NULL)
-          return -1;
-        if ((result = vector_add(tuples, (void **)&tuple)) != 0)
-          return result;
+        c_index[index] = offset_j + t;
+        c_vals[index] = 1;
+        index += 1;
       }
       offset_j += big_t - instance->processing_times[j] + 1;
     }
-    if (tuples->length == 0)
+
+    if (c_size == 0)
       continue;
 
-    if ((result = realloc_constr(&c_index, &c_vals, tuples->length)) != 0)
-      return result;
-
-    for (size_t i = 0; i < tuples->length; i++) {
-      tuple_t *tuple = tuples->values[i];
-      c_index[i] = tuple->index;
-      c_vals[i] = tuple->val;
-    }
-
-    if ((result = GRBaddconstr(instance->model, tuples->length, c_index, c_vals,
+    if ((result = GRBaddconstr(instance->model, c_size, c_index, c_vals,
                                GRB_LESS_EQUAL, 1, NULL)) != 0) {
       perror(formatted_string("Constraint tau = %ld", tau));
       log_error(sim, result, "GRBaddconstr");
-      c_print(tuples->length, c_index, c_vals, names);
+      c_print(c_size, c_index, c_vals, names);
       return result;
     }
   }
@@ -652,12 +630,12 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
     offset_j += big_t - instance->processing_times[j] + 1;
   }
 
-  for (size_t i = 0; i < total_vars; i++) {
+  for (size_t i = 0; i < size; i++) {
     free(names[i]);
+    names[i] = NULL;
   }
   free(names);
   names = NULL;
-  vector_free(tuples);
   free(vars);
   vars = NULL;
   free(var_types);
@@ -727,25 +705,12 @@ int realloc_constr(int **constr_index, double **constr_vals, size_t size) {
     perror("Could not realloc constr_index");
     return -1;
   }
-  memset(*constr_index, 0, sizeof(**constr_index) * size);
 
   *constr_vals = realloc(*constr_vals, sizeof(**constr_vals) * size);
   if (*constr_vals == NULL) {
     perror("Could not realloc constr_vals");
     return -1;
   }
-  memset(*constr_vals, 0, sizeof(**constr_vals) * size);
 
   return 0;
-}
-
-tuple_t *create_tuple(int index, double val) {
-  tuple_t *tuple = malloc(sizeof(*tuple));
-  if (tuple == NULL) {
-    perror("Could not allocate memory for tuple");
-    return NULL;
-  }
-  tuple->index = index;
-  tuple->val = val;
-  return tuple;
 }
