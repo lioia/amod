@@ -61,30 +61,10 @@ int vector_refit(vector_t *vector) {
     return 0;
   vector->values =
       realloc(vector->values, sizeof(*vector->values) * vector->length);
-  if (*vector->values == NULL) {
+  if (vector->values == NULL) {
     perror("Could not reallocate memory for values");
     return -1;
   }
   vector->allocated_length = vector->length;
-  return 0;
-}
-
-int vector_reset(vector_t *vector) {
-  for (size_t i = 0; i < vector->length; i++) {
-    free(vector->values[i]);
-  }
-  if (vector->allocated_length != VECTOR_DEFAULT_SIZE) {
-    vector->values =
-        realloc(vector->values, sizeof(*vector->values) * VECTOR_DEFAULT_SIZE);
-    if (*vector->values == NULL) {
-      perror("Could not rellocate memory for values when resetting");
-      return -1;
-    }
-  }
-  for (size_t i = 0; i < VECTOR_DEFAULT_SIZE; i++) {
-    vector->values[i] = NULL;
-  }
-  vector->length = 0;
-  vector->allocated_length = VECTOR_DEFAULT_SIZE;
   return 0;
 }

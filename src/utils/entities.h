@@ -41,5 +41,3 @@ int vector_add(vector_t *vector, void **value);
 int vector_free(vector_t *vector);
 // Resize vector values to size `length`
 int vector_refit(vector_t *vector);
-// Reinit the vector
-int vector_reset(vector_t *vector);
