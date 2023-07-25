@@ -14,8 +14,8 @@
 #include <windows.h>
 #endif
 
-void quicksort(instance_t *instance, int low, int high);
-int partition(instance_t *instance, int low, int high);
+void quicksort(instance_t *instance, int *indexes, int low, int high);
+int partition(instance_t *instance, int *indexes, int low, int high);
 void swap(int *a, int *b);
 
 char *formatted_string(const char *format, ...) {
@@ -63,20 +63,20 @@ int create_folder(const char *path) {
   return result;
 }
 
-void sort(instance_t *instance) {
-  quicksort(instance, 0, instance->number_of_jobs - 1);
+void sort(instance_t *instance, int *indexes) {
+  quicksort(instance, indexes, 0, instance->number_of_jobs - 1);
 }
 
-void quicksort(instance_t *instance, int low, int high) {
+void quicksort(instance_t *instance, int *indexes, int low, int high) {
   if (low >= high)
     return;
-  int pi = partition(instance, low, high);
+  int pi = partition(instance, indexes, low, high);
 
-  quicksort(instance, low, pi - 1);
-  quicksort(instance, pi + 1, high);
+  quicksort(instance, indexes, low, pi - 1);
+  quicksort(instance, indexes, pi + 1, high);
 }
 
-int partition(instance_t *instance, int low, int high) {
+int partition(instance_t *instance, int *indexes, int low, int high) {
   int pivot = instance->release_dates[high];
 
   int i = low - 1;
@@ -86,6 +86,7 @@ int partition(instance_t *instance, int low, int high) {
       i += 1;
       swap(&instance->release_dates[i], &instance->release_dates[j]);
       swap(&instance->processing_times[i], &instance->processing_times[j]);
+      swap(&indexes[i], &indexes[j]);
     }
   }
 

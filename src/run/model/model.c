@@ -204,7 +204,7 @@ int model_precedence_create(simulation_t *sim, instance_t *instance) {
       c_vals[0] = 1;
       c_index[1] = j;
       c_vals[1] = -1;
-      c_index[2] = index;
+      c_index[2] = index++;
       c_vals[2] = big_m;
       double rhs = big_m - instance->processing_times[j];
 
@@ -576,7 +576,7 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
       if (max < 0)
         max = 0;
       // There are not enough time slots to process the entire job
-      if (big_t - tau < instance->processing_times[j] || tau - max == 0) {
+      if (big_t - tau < instance->processing_times[j] || tau - max + 1 == 0) {
         offset_j += big_t - instance->processing_times[j] + 1;
         continue;
       }
@@ -651,15 +651,25 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
 int model_heuristics_create(simulation_t *sim, instance_t *instance,
                             int *heuristic_value) {
   int result = 0;
-  sort(instance);
-  int *c_hs = malloc(sizeof(*c_hs) * instance->number_of_jobs);
+  int n = instance->number_of_jobs;
+  // Array to keep track of index changes when sorting
+  int *indexes = malloc(sizeof(*indexes) * n);
+  if (indexes == NULL) {
+    perror("Could not allocate memory for indexes");
+    return -1;
+  }
+  for (size_t i = 0; i < n; i++) {
+    indexes[i] = (int)i;
+  }
+  sort(instance, indexes);
+  int *c_hs = malloc(sizeof(*c_hs) * n);
   if (c_hs == NULL) {
     perror("Could not allocate memory for C_js");
     return -1;
   }
   c_hs[0] = instance->release_dates[0] + instance->processing_times[0];
   *heuristic_value = c_hs[0];
-  for (size_t i = 1; i < instance->number_of_jobs; i++) {
+  for (size_t i = 1; i < n; i++) {
     // Current job start when previous job finished
     int s_h = c_hs[i - 1];
     // The next job is not released -> adding idle time until it's released
@@ -675,9 +685,18 @@ int model_heuristics_create(simulation_t *sim, instance_t *instance,
     return result;
   }
 
-  for (size_t i = 0; i < instance->number_of_jobs; i++) {
+  // Initial solution value for C_[h] variables
+  for (size_t i = 0; i < n; i++) {
     if ((result = GRBsetdblattrelement(instance->model, "Start", i,
                                        (double)c_hs[i])) != 0) {
+      log_error(sim, result, "GRBsetdblattrelement(\"Start\")");
+      return result;
+    }
+  }
+  for (size_t i = 0; i < n; i++) {
+    int index = n + indexes[i] * instance->number_of_jobs + i;
+    if ((result = GRBsetdblattrelement(instance->model, "Start", index,
+                                       (double)1)) != 0) {
       log_error(sim, result, "GRBsetdblattrelement(\"Start\")");
       return result;
     }

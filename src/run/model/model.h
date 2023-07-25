@@ -2,7 +2,7 @@
 
 #include "../../utils/entities.h"
 
-#define TIME_LIMIT 60.0 * 15 // 15 minutes
+#define TIME_LIMIT 60.0 * 5 // 5 minutes
 
 typedef struct {
   int index;
