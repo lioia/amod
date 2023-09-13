@@ -8,6 +8,7 @@ project(
   LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
+set(PROJECT_LIBRARY_NAME amod_library)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 if(NOT CMAKE_BUILD_TYPE)
@@ -27,14 +28,29 @@ find_package(GUROBI REQUIRED)
 
 include_directories(${GUROBI_INCLUDE_DIRS})
 
-add_executable(
-  amod
-  # other files go here
-  src/main.c)
+add_library(
+  ${PROJECT_LIBRARY_NAME} STATIC
+  src/generate/generate.c src/utils/entities.c src/run/run.c src/utils/csv.c
+  src/utils/utils.c src/run/model/model.c)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} ${GUROBI_LIBRARY})
+add_executable(${CMAKE_PROJECT_NAME} src/main.c)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} ${PROJECT_LIBRARY_NAME})
+target_link_libraries(${PROJECT_LIBRARY_NAME} ${GUROBI_LIBRARY})
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
   include(FeatureSummary)
   feature_summary(WHAT ALL)
+endif()
+
+set_property(
+  TARGET ${CMAKE_PROJECT_NAME}
+  APPEND
+  PROPERTY ADDITIONAL_CLEAN_FILES *.log .cache)
+
+# Testing
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  message("Enabling tests")
+  include(CTest)
+  add_subdirectory(tests)
 endif()
