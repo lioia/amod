@@ -16,5 +16,8 @@ solution_t *model_optimize(simulation_t *simulation, int instance_number,
 int model_precedence_create(simulation_t *simulation, instance_t *instance);
 int model_positional_create(simulation_t *simulation, instance_t *instance);
 int model_time_indexed_create(simulation_t *simulation, instance_t *instance);
-int model_heuristics_create(simulation_t *simulation, instance_t *instance,
-                            int *heuristic_value);
+int model_heuristics_predecence_create(simulation_t *sim, instance_t *instance,
+                                       int *heuristic_value);
+int model_heuristics_positional_create(simulation_t *simulation,
+                                       instance_t *instance,
+                                       int *heuristic_value);

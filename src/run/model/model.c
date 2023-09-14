@@ -41,8 +41,11 @@ int model_init(simulation_t *sim, int instance_number, solver_t solver,
   case TimeIndexed:
     result = model_time_indexed_create(sim, instance);
     break;
-  case Heuristics:
-    result = model_heuristics_create(sim, instance, heuristic_value);
+  case Heuristics_Precedence:
+    result = model_heuristics_predecence_create(sim, instance, heuristic_value);
+    break;
+  case Heuristics_Positional:
+    result = model_heuristics_positional_create(sim, instance, heuristic_value);
     break;
   }
   free(name);
@@ -648,8 +651,40 @@ int model_time_indexed_create(simulation_t *sim, instance_t *instance) {
   return result;
 }
 
-int model_heuristics_create(simulation_t *sim, instance_t *instance,
-                            int *heuristic_value) {
+int model_heuristics_predecence_create(simulation_t *sim, instance_t *instance,
+                                       int *heuristic_value) {
+  int result = 0;
+  int n = instance->number_of_jobs;
+  // Array to keep track of index changes when sorting
+  int *indexes = malloc(sizeof(*indexes) * n);
+  if (indexes == NULL) {
+    perror("Could not allocate memory for indexes");
+    return -1;
+  }
+  for (size_t i = 0; i < n; i++) {
+    indexes[i] = (int)i;
+  }
+  sort(instance, indexes);
+  if ((result = model_positional_create(sim, instance)) != 0) {
+    perror("Could not create positional model for heuristic case");
+    return result;
+  }
+  // Initial solution (some information)
+  for (size_t i = 0; i < n - 1; i++) {
+    for (size_t j = indexes[i] + 1; j < n; j++) {
+      int index = n + (n - 1) * indexes[i] + n - j - 1;
+      if ((result = GRBsetdblattrelement(instance->model, "Start", index,
+                                         (double)1)) != 0) {
+        log_error(sim, result, "GRBsetintattrelement(\"Start\")");
+        return result;
+      }
+    }
+  }
+  return result;
+}
+
+int model_heuristics_positional_create(simulation_t *sim, instance_t *instance,
+                                       int *heuristic_value) {
   int result = 0;
   int n = instance->number_of_jobs;
   // Array to keep track of index changes when sorting

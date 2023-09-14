@@ -92,6 +92,7 @@ int partition(instance_t *instance, int *indexes, int low, int high) {
 
   swap(&instance->release_dates[i + 1], &instance->release_dates[high]);
   swap(&instance->processing_times[i + 1], &instance->processing_times[high]);
+  swap(&indexes[i + 1], &indexes[high]);
 
   return i + 1;
 }

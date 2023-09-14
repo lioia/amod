@@ -9,7 +9,8 @@
 solution_t *model_precedence_test(simulation_t *simulation);
 solution_t *model_positional_test(simulation_t *simulation);
 solution_t *model_timeindexed_test(simulation_t *simulation);
-solution_t *model_heuristics_test(simulation_t *simulation);
+solution_t *model_heuristics_precedence_test(simulation_t *simulation);
+solution_t *model_heuristics_positional_test(simulation_t *simulation);
 
 int main(void) {
   int result = 0;
@@ -56,11 +57,18 @@ int main(void) {
     perror("Model Time Indexed Test failed");
   }
   printf("---------------------------\n");
-  printf("Model Time Indexed Test\n");
-  solution = model_heuristics_test(sim);
+  printf("Model Heuristics Predecence Test\n");
+  solution = model_heuristics_precedence_test(sim);
   if (solution == NULL) {
     result = -1;
-    perror("Model Heuristics Test failed");
+    perror("Model Heuristics Precedence Test failed");
+  }
+  printf("---------------------------\n");
+  printf("Model Heuristics Positional Test\n");
+  solution = model_heuristics_positional_test(sim);
+  if (solution == NULL) {
+    result = -1;
+    perror("Model Heuristics Positional Test failed");
   }
   printf("---------------------------\n");
 
@@ -119,16 +127,34 @@ solution_t *model_timeindexed_test(simulation_t *simulation) {
   return model_optimize(simulation, 0, TimeIndexed);
 }
 
-solution_t *model_heuristics_test(simulation_t *simulation) {
+solution_t *model_heuristics_precedence_test(simulation_t *simulation) {
   int heuristic_value;
   instance_t *instance = simulation->instances->values[0];
-  if (model_init(simulation, 0, Heuristics, &heuristic_value) != 0) {
+  if (model_init(simulation, 0, Heuristics_Precedence, &heuristic_value) != 0) {
     perror("Could not init model");
     return NULL;
   }
 
-  if (GRBwrite(instance->model, "output/heuristic.lp") != 0) {
-    perror("Could not write heuristic.lp");
+  if (GRBwrite(instance->model, "output/heuristic_precedence.lp") != 0) {
+    perror("Could not write heuristic_precedence.lp");
+    return NULL;
+  }
+  solution_t *solution = model_optimize(simulation, 0, Positional);
+  if (solution != NULL)
+    solution->heuristic_value = heuristic_value;
+  return solution;
+}
+
+solution_t *model_heuristics_positional_test(simulation_t *simulation) {
+  int heuristic_value;
+  instance_t *instance = simulation->instances->values[0];
+  if (model_init(simulation, 0, Heuristics_Positional, &heuristic_value) != 0) {
+    perror("Could not init model");
+    return NULL;
+  }
+
+  if (GRBwrite(instance->model, "output/heuristic_positional.lp") != 0) {
+    perror("Could not write heuristic_positional.lp");
     return NULL;
   }
   solution_t *solution = model_optimize(simulation, 0, Positional);

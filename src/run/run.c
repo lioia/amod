@@ -39,7 +39,8 @@ int run(const char *filename) {
   if (sim == NULL)
     return -1;
 
-  for (solver_t solver = Precedence; solver <= Heuristics; solver++) {
+  for (solver_t solver = Precedence; solver <= Heuristics_Positional;
+       solver++) {
     char *solver_folder = formatted_string("output/%d", solver);
     if (solver_folder == NULL)
       solver_folder = "output/unknown";
