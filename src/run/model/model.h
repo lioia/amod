@@ -21,3 +21,6 @@ int model_heuristics_predecence_create(simulation_t *sim, instance_t *instance,
 int model_heuristics_positional_create(simulation_t *simulation,
                                        instance_t *instance,
                                        int *heuristic_value);
+int model_heuristics_time_indexed_create(simulation_t *simulation,
+                                         instance_t *instance,
+                                         int *heuristic_value);

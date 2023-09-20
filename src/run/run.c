@@ -39,7 +39,7 @@ int run(const char *filename) {
   if (sim == NULL)
     return -1;
 
-  for (solver_t solver = Precedence; solver <= Heuristics_Positional;
+  for (solver_t solver = Precedence; solver <= Heuristics_TimeIndexed;
        solver++) {
     char *solver_folder = formatted_string("output/%d", solver);
     if (solver_folder == NULL)

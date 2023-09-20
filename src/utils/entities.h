@@ -8,7 +8,8 @@ typedef enum {
   Positional,
   TimeIndexed,
   Heuristics_Precedence,
-  Heuristics_Positional
+  Heuristics_Positional,
+  Heuristics_TimeIndexed
 } solver_t;
 
 typedef struct {

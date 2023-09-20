@@ -47,6 +47,10 @@ int model_init(simulation_t *sim, int instance_number, solver_t solver,
   case Heuristics_Positional:
     result = model_heuristics_positional_create(sim, instance, heuristic_value);
     break;
+  case Heuristics_TimeIndexed:
+    result =
+        model_heuristics_time_indexed_create(sim, instance, heuristic_value);
+    break;
   }
   free(name);
   name = NULL;
@@ -733,6 +737,61 @@ int model_heuristics_positional_create(simulation_t *sim, instance_t *instance,
     if ((result = GRBsetdblattrelement(instance->model, "Start", index,
                                        (double)1)) != 0) {
       log_error(sim, result, "GRBsetdblattrelement(\"Start\")");
+      return result;
+    }
+  }
+  return result;
+}
+
+int model_heuristics_time_indexed_create(simulation_t *sim,
+                                         instance_t *instance,
+                                         int *heuristic_value) {
+  int result = 0;
+  int n = instance->number_of_jobs;
+
+  int big_t = 1;
+  int max_r_j = 0;
+  for (size_t j = 0; j < n; j++) {
+    big_t += instance->processing_times[j];
+    if (instance->release_dates[j] > max_r_j)
+      max_r_j = instance->release_dates[j];
+  }
+  big_t += max_r_j;
+
+  int *offsets = malloc(sizeof(*offsets) * n);
+  if (offsets == NULL) {
+    perror("Could not allocate memory for offsets");
+    return -1;
+  }
+  int offset_j = 0;
+  for (size_t i = 0; i < n; i++) {
+    offset_j += big_t - instance->processing_times[i] + 1;
+    offsets[i] = offset_j;
+  }
+  // Array to keep track of index changes when sorting
+  int *indexes = malloc(sizeof(*indexes) * n);
+  if (indexes == NULL) {
+    perror("Could not allocate memory for indexes");
+    return -1;
+  }
+  for (size_t i = 0; i < n; i++) {
+    indexes[i] = (int)i;
+  }
+  sort(instance, indexes);
+  if ((result = model_time_indexed_create(sim, instance)) != 0) {
+    perror("Could not create time indexed model for heuristic case");
+    return result;
+  }
+
+  // Initial solution
+  for (size_t i = 0; i < n; i++) {
+    int index = instance->release_dates[i];
+    if (indexes[i] != 0) {
+      index = offsets[i - 1] + instance->release_dates[i];
+    }
+    if ((result = GRBsetdblattrelement(instance->model, "Start", index,
+                                       (double)1)) != 0) {
+      log_error(sim, result, "GRBsetintattrelement(\"Start\")");
       return result;
     }
   }
